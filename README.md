@@ -1,55 +1,42 @@
-# Claude Code Skills Repository
+# Claude Code Skills
 
-Claude Code のスラッシュコマンド（スキル）を管理するリポジトリ。
-使うたびに学習ログが追記され、スキルが進化していく。
+「どうすれば効率よくできるか」のノウハウを蓄積するスキルリポジトリ。
+プロジェクト固有の情報ではなく、**再利用可能なパターン・コツ・判断基準**だけを記録していく。
 
 ## 仕組み
 
 ```
-GitHub (shikata-race/skills)
+GitHub (shikata-race/skills)   ← ノウハウの永続保存・共有
         ↕  /skill-sync
-~/.claude/commands/   ← Claude Code が読む場所
+~/.claude/commands/             ← Claude Code がスキルとして実行する場所
 ```
 
-1. `/skill-sync` — GitHub から最新スキルを pull して `~/.claude/commands/` に反映
-2. `/skill-update` — スキルに学習内容を追記して GitHub に push
-3. 個別スキル（例: `/gas-parallel`）— 実際の作業を実行
-
-## クイックスタート
-
-```bash
-# 初回セットアップ
-git clone https://github.com/shikata-race/skills.git ~/.claude/skills-repo
-cp ~/.claude/skills-repo/*.md ~/.claude/commands/
-# ただし README.md / REGISTRY.md はコピー不要
-```
-
-以降は `/skill-sync` で自動同期。
+作業後に `/skill-update` で気づきを書き込み → GitHubに蓄積 → 次回から改善された手順で動く。
 
 ## スキル一覧
 
-→ [REGISTRY.md](./REGISTRY.md) を参照
+→ [REGISTRY.md](./REGISTRY.md)
 
-## スキルファイルのフォーマット
-
-各スキルファイルは以下の構造を持つ：
+## スキルファイルの構造
 
 ```markdown
-# skill-name — 説明
-
-概要文
+# skill-name — 一行説明
 
 ## 使い方
-## 実行手順
-## 注意事項
+## 実行手順   ← 再現性ある手順
+## よくある失敗と対策   ← 経験から得た判断基準
 
 ---
 
-## 学習ログ
-
-<!-- skill-update によって自動追記される -->
+## 学習ログ   ← /skill-update が追記する場所
 ### YYYY-MM-DD
-- 学んだこと
-- うまくいったパターン
-- 失敗と改善案
+- パターン・コツ・注意点（汎用的なものだけ）
 ```
+
+## 記録のルール
+
+| 書く | 書かない |
+|---|---|
+| 「〇〇の順にやると競合しにくい」 | 会社名・プロジェクト名 |
+| 「△△パターンはエラーになりやすい」 | ファイルID・APIキー |
+| 「エージェントへの指示で〇〇を明示すると精度が上がる」 | 「今回の△△機能では〜」 |
