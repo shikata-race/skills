@@ -130,3 +130,8 @@ function switchTab(tabId) {
 - `classList` の見た目制御（`.active` など）は問題ない。`display` の切り替えだけ `style.display` にする
 - Flexbox コンテナは `display:''` に戻すと元の `flex` が効かないことがある → `display:'flex'` を明示するか、CSS側に `display:flex` を書いておく
 - 初期状態を HTML の `style="display:none"` で書いておくのが最も安全（CSSファイルに書くより確実）
+
+### 2026-04-08
+- **効いたパターン**: タブ切り替えで共有パネルの表示/非表示を制御する場合、`switchTab()` 内で `panel.style.display = (関連タブか) ? '' : 'none'` を入れる。パネルをタブ外に配置しても、無関係なタブで表示されて混乱を招く
+- **注意**: flex コンテナの子要素がスクロールしない場合、`overflow-y: auto` の追加ではなく `min-height: 0` を親に指定するのが正解。`overflow-y: auto` を親にも子にも入れると二重スクロールになる
+- **コツ**: ヘッダーからフォーム要素を分離してパネル化する場合、そのパネルが複数タブから参照されるかを先に確認する。タブ内に入れると他タブから参照できなくなる
