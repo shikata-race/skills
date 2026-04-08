@@ -10,6 +10,7 @@
 | GAS落とし穴集 | `/gas-gotchas` | GAS・スプレッドシート開発でハマりやすいバグパターンと回避策 | 2026-04-08 |
 | スキル同期 | `/skill-sync` | GitHubから最新スキルをpullして`~/.claude/commands/`に反映 | 2026-03-25 |
 | スキル学習 | `/skill-update` | 作業後のコツ・パターンをスキルに追記してGitHubにpush | 2026-03-25 |
+| Win Python配布 | `/win-python-build` | Linux→Windows向けPython exeビルドキット作成の注意点 | 2026-04-08 |
 
 ## カテゴリ別
 
@@ -22,6 +23,9 @@
 - `/gas-pdf-export` — Sheets→PDF変換のA4横・1ページ収め・中央配置
 - `/gas-lockservice` — LockService + 処理中フラグによる二重実行防止
 - `/gas-gotchas` — setValues/boolean/innerHTML等の落とし穴と回避策
+
+**Windows配布**
+- `/win-python-build` — Linux→Windows向けPython exeビルドキット（エンコーディング・バージョン注意点）
 
 **スキル管理**
 - `/skill-sync` — リポジトリとの同期
