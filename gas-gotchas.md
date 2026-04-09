@@ -112,3 +112,10 @@ input.value = (item.amount !== undefined && item.amount !== null) ? item.amount 
 - **注意**: 非表示フィールドの値を hidden input に変換する場合、元が `<select>` だったときは `.value` の挙動が変わらないか確認。hidden input は `.value` で文字列を返すが、select は選択された option の value を返す
 - **効いたパターン**: 実装直後に「敵対的セルフレビュー」を行う。自分の変更を攻撃者目線で精査すると、CRITICAL 級のバグ（バリデーション崩壊・データ消失）を本番前に潰せる
 - **コツ**: カラムを「非表示にするが内部保持」する場合、デフォルト値は元のまま残すこと。空文字にすると集計処理で「空カテゴリ」が発生する
+
+### 2026-04-09
+- **注意**: Web NFC API は iOS 完全非対応（Safari・Chrome 含む全ブラウザ）。現場の出席認証にはQRコード方式を選ぶこと。html5-qrcode ライブラリなら iOS Safari 14.3+ / Android Chrome 両対応
+- **注意**: YouTube IFrame API の `postMessage` は GAS の `HtmlService` iframe 内で制限される。再生進捗の正確なトラッキングが必要な場合はタイマーベース（setInterval + 動画duration）で代替する
+- **効いたパターン**: 公開アプリ（ANYONE_ANONYMOUS デプロイ）で社外メンバーにもアクセス可能にしつつ、管理者機能だけ PIN 認証（Settings シート保存 + sessionStorage）で保護する構成。Googleアカウント不要で現場作業員のハードルが下がる
+- **効いたパターン**: 1台の端末で複数人の出席を記録する場合、sessionId（UUID）で同時視聴者をグループ化し、「もう1人追加」ボタンで Step 2（本人確認）に戻るループUIが直感的。動画は再視聴不要にすることで時間節約
+- **コツ**: スプレッドシートの boolean 列を `getValues()` で読む際、`true` / `'TRUE'` / `'true'` すべてのパターンが来る。`=== true` だけでは漏れるので `a === true || a === 'TRUE' || a === 'true'` で判定する
