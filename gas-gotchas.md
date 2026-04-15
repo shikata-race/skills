@@ -73,6 +73,29 @@ google.script.run
 
 ---
 
+## HtmlService IFRAME mode のフレームワークバグ
+
+### 文字列リテラル内の `//` (連続2スラッシュ) で SyntaxError
+```javascript
+// ✕ 文字列内の // が GAS framework を破壊
+img.src = 'https://lh3.googleusercontent.com/d/' + id + '=w100';
+// → "Failed to execute 'write' on 'Document': Invalid or unexpected token"
+//    at lt (mae_html_user_bin_i18n_mae_html_user__ja.js:318)
+
+// ◯ 配列 + .join('/') で組み立てて回避
+img.src = ['https:', '', 'lh3.googleusercontent.com', 'd', id + '=w100'].join('/');
+
+// ◯ または + で分割
+const url = 'https:/' + '/lh3.googleusercontent.com/d/' + id + '=w100';
+```
+**なぜ壊れるか**: GAS の IFRAME mode では `mae_html_user.js` がユーザーHTMLを子iframeに注入する。そのチャンク処理の中で**文字列リテラル内の `//` を JS のコメント開始と誤認**し、以降のコードが文字列の途中扱いになって壊れる。
+- Node の V8 では parse 通るのに **Chrome の V8 (GAS経由) では失敗** するのが特徴
+- DevTools には `userCodeAppPanel:NNNN Uncaught SyntaxError: Invalid or unexpected token` と出る (NNNNは問題の行番号)
+- 単一スラッシュ複数 (`a/b/c`) は OK。**連続2文字 `//` だけ**がトリガー
+- 該当箇所は `grep -nE "['\"\`][^'\"\`]*//[^'\"\`]*['\"\`]"` で全列挙できる
+
+---
+
 ## フロントエンドDOM操作の罠
 
 ### innerHTML += はイベントリスナーを全破壊する
@@ -112,6 +135,19 @@ input.value = (item.amount !== undefined && item.amount !== null) ? item.amount 
 - **注意**: 非表示フィールドの値を hidden input に変換する場合、元が `<select>` だったときは `.value` の挙動が変わらないか確認。hidden input は `.value` で文字列を返すが、select は選択された option の value を返す
 - **効いたパターン**: 実装直後に「敵対的セルフレビュー」を行う。自分の変更を攻撃者目線で精査すると、CRITICAL 級のバグ（バリデーション崩壊・データ消失）を本番前に潰せる
 - **コツ**: カラムを「非表示にするが内部保持」する場合、デフォルト値は元のまま残すこと。空文字にすると集計処理で「空カテゴリ」が発生する
+
+### 2026-04-13
+- **注意**: `getValues()` は「セルが日付書式でも値が数値」の場合 Date オブジェクトではなく**そのまま数値（Excelシリアル値）を返す**。Excel由来のxlsxを取り込んだシートで頻発。`val instanceof Date` だけで判定するとシリアル値がスルーされてUIに「45738」などの謎数字が出る
+- **対策**: シリアル値→Date変換は `new Date((serial - 25569) * 86400000)` で UTC基準にして、表示は `d.getUTCFullYear()`/`getUTCMonth()+1`/`getUTCDate()` で取り出すとタイムゾーンずれを回避できる。20000〜80000の範囲外は日付として扱わない（誤変換防止）
+- **効いたパターン**: サーバ側共通ヘルパー `_formatCellValue(val, header, code2name)` を作ってヘッダー名で分岐（`/日|年月|期限|いつ/.test(h)` で日付列判定、`/担当|営業マン/.test(h)` で担当コード→氏名変換）。表示整形を1箇所に集約すると全画面で一貫して直せる
+- **効いたパターン**: 重いテーブル取得は「2段階ロード」で体感速度を改善できる。Phase1: `page=1, pageSize=50` で先頭だけ取得→即描画、Phase2: バックグラウンドで全件取得→キャッシュ置換。ソート／検索／全文フィルタは全件データが必要なので「準備できるまで待つ」ヘルパー（`_ensureFullAlertData`）を経由させる
+- **注意**: キャッシュキーをバージョニング（`alert_` → `alert_v2_`）して古い形式のJSONが混ざらないようにする。フォーマット変更時の必須作業。古いキーの削除箇所も全部grepして更新
+
+### 2026-04-15
+- **CRITICAL**: GAS HtmlService IFRAME mode で **文字列リテラル内の `//` (連続スラッシュ)** が SyntaxError を起こす。`'https://...'` のような URL リテラルが全滅する。Node ではparse通るのに Chrome ではダメ、という非対称が特徴的な症状
+- **対策**: URL構築は `[parts].join('/')` か `'https:/' + '/...'` で分割する。コードベースから一括検出は `grep -nE "['\"\`][^'\"\`]*//[^'\"\`]*['\"\`]"`
+- **デバッグの教訓**: bisection でファイルを単純truncateすると関数の途中で切れて常に "Unexpected end of input" になり原因が見つからない。**問題行を別の安全な内容に置換**して有無を確認する方が早い
+- **コツ**: エラー位置 `userCodeAppPanel:NNNN` の NNNN を信じて、**同じ行を変えても同じ番号で出続ける**ようなら、その行の文字列リテラル中身を疑う
 
 ### 2026-04-09
 - **注意**: Web NFC API は iOS 完全非対応（Safari・Chrome 含む全ブラウザ）。現場の出席認証にはQRコード方式を選ぶこと。html5-qrcode ライブラリなら iOS Safari 14.3+ / Android Chrome 両対応
