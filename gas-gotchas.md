@@ -155,3 +155,10 @@ input.value = (item.amount !== undefined && item.amount !== null) ? item.amount 
 - **効いたパターン**: 公開アプリ（ANYONE_ANONYMOUS デプロイ）で社外メンバーにもアクセス可能にしつつ、管理者機能だけ PIN 認証（Settings シート保存 + sessionStorage）で保護する構成。Googleアカウント不要で現場作業員のハードルが下がる
 - **効いたパターン**: 1台の端末で複数人の出席を記録する場合、sessionId（UUID）で同時視聴者をグループ化し、「もう1人追加」ボタンで Step 2（本人確認）に戻るループUIが直感的。動画は再視聴不要にすることで時間節約
 - **コツ**: スプレッドシートの boolean 列を `getValues()` で読む際、`true` / `'TRUE'` / `'true'` すべてのパターンが来る。`=== true` だけでは漏れるので `a === true || a === 'TRUE' || a === 'true'` で判定する
+
+### 2026-04-17
+- **CRITICAL**: Chrome拡張やブラウザ用JS（`window`/`document`/`MutationObserver` 等を参照するファイル）がGASプロジェクトに混ざると、**ロード時に全関数がクラッシュ**する。症状は「メニューが出ない」「onOpenが動かない」「どの関数を手動実行してもエラー」など全面的で、エラーログにも残りにくい（simple triggerはログが出ない）
+- **なぜ壊れるか**: GASはプロジェクト内の全.js/.gsを1つのグローバルスコープにロードする。トップレベルIIFE `(() => {...})()` が `document.xxx` 等を触るとロード時 ReferenceError で全ファイルの定義が失敗する
+- **対策**: `clasp push` で不要ファイルが混入しないよう **`.claspignore` を必ず設置**する。既にサーバーに上がっている場合は Apps Script API (`projects.updateContent`) で該当ファイルを除外した状態で PUT する（clasp pushではリモート削除できない）
+- **診断法**: `curl https://script.googleapis.com/v1/projects/{ID}/content` でサーバー側のファイル一覧を取得 → ローカルに無いファイルや明らかに場違いなファイル (`content.js` 等) が無いか確認
+- **予防**: トップレベルIIFE冒頭に `if (typeof document === 'undefined') return;` のガードを入れると両環境で動く。ただし根本的には混入させないのが正解
