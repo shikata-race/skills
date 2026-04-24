@@ -12,6 +12,7 @@
 | スキル学習 | `/skill-update` | 作業後のコツ・パターンをスキルに追記してGitHubにpush | 2026-03-25 |
 | Win Python配布 | `/win-python-build` | Linux→Windows向けPython exeビルドキット作成の注意点 | 2026-04-08 |
 | 備福拘束時間 | `/bifuku-kosoku` | 備福運送 拘束時間管理ロボットの保守（BizRobo→VBA/PS置き換え） | 2026-04-10 |
+| 暁電業岡山 | `/akatsuki-okayama` | 暁電業 岡山県入札情報取得ツールの検証・保守（DENCHO / noVNC + MCP） | 2026-04-24 |
 
 ## カテゴリ別
 
@@ -30,6 +31,7 @@
 
 **顧客プロジェクト**
 - `/bifuku-kosoku` — 備福運送 拘束時間管理ロボットの保守・修正（VBA/PowerShell/BizRobo）
+- `/akatsuki-okayama` — 暁電業 岡山県入札情報取得ツールの検証・保守（DENCHO / noVNC + MCP 検証手順含む）
 
 **スキル管理**
 - `/skill-sync` — リポジトリとの同期
