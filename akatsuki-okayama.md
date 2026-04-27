@@ -100,3 +100,17 @@ pkill -f "sleep 99999"
 
 <!-- /skill-update で追記される -->
 - 2026-04-24: 初版作成。検証再開の手順 (MCPスタック復活 → noVNC → `node OkayamaCollector.js`) を skill 化。
+
+### 2026-04-27
+- **効いたパターン**: 動作検証だけが目的なら **VNC/Xvfb/x11vnc/websockify は一切不要**。`OkayamaCollector.js` は `chromium.launch({ headless: true })` がデフォルトなので、Playwright付属Chromium (`~/.cache/ms-playwright/chromium_headless_shell-*`) があれば `node` 直叩きで完結する。GUI がいるのは挙動を目視で追いたいデバッグ時だけ。STEP 1〜2 のVNCスタック構築は **デバッグ専用** と位置づける
+- **効いたパターン**: PowerShell Wrapper を経由せず JS を単体検証する場合、`settings.json` は読まれない。**Base64 JSON を `argv[2]` に渡す** のが最短:
+  ```bash
+  CONFIG=$(node -e 'console.log(Buffer.from(JSON.stringify({outputDir:"output",headless:true,limit:5,companyName:"...",representativeName:"..."})).toString("base64"))')
+  node OkayamaCollector.js "$CONFIG"
+  ```
+  `limit` で件数制限すると、初回検証は5件程度で十分判定できる
+- **注意**: Cloud Workstation 初回起動時は `apt-cache` が空なので `apt-cache search` も `apt-get install` もパッケージを見つけられない。**必ず `sudo apt-get update` を先に走らせる**。エラーメッセージは "Unable to locate package" — リポジトリ未設定と紛らわしいが update で解決
+- **注意**: Playwright Chromium のヘッドレス起動には `libxkbcommon0` が必須 (Ubuntu Noble の素のCloud Workstationには未導入)。`libpango-1.0-0` 等は最初から入っていることが多い。Playwright が要求する全依存を一発で入れるなら `sudo npx --yes playwright install-deps chromium` の方が安全
+- **コツ**: 検証時は「添付ファイルはありません」と早期リターンする案件が混じるのが正常 (発注元の運用)。`limit:5` で 5件中 2件 ZIP取得、3件「添付なし」は健全。**ZIP 0件 = バグ ではない** 。バグ判定は「公告/設計書ボタンが見つからない」「step限界超過」「FATAL」が出たときだけにする
+- **コツ**: 取得ZIPは中身が CP932 (Shift_JIS) 命名のネストZIP。`unzip -l` で文字化けして見えても **ZIPの構造自体は健全**。サイズ (1MB〜数MB) で正否を判定する方が早い
+- **コツ**: 結果行のタイトルは `<a>` 内に「番号\n番号 工事名」の2行構成で入る。`split('\n')` して2行目を採用するロジック (`OkayamaCollector.js:282-283`) が肝。サイト改修でこの構造が変わるとタイトルが空になり全件 skip するので、`Hit rows` と `Skipping` ログの比に注意
