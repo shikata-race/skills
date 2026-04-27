@@ -96,6 +96,35 @@ const url = 'https:/' + '/lh3.googleusercontent.com/d/' + id + '=w100';
 
 ---
 
+## Advanced Drive Service の罠
+
+### v2 と v3 でメタデータのフィールド名が違う（`title` → `name`）
+```javascript
+// ✕ v3 サービスに v2 のフィールド名を渡すとエラー
+//    "drive.files.update の呼び出しに失敗しました"
+Drive.Files.update(
+    { title: file.getName(), mimeType: MimeType.MICROSOFT_EXCEL },
+    fileId,
+    blob
+);
+
+// ◯ v3 では `name` を使う
+Drive.Files.update(
+    { name: file.getName(), mimeType: MimeType.MICROSOFT_EXCEL },
+    fileId,
+    blob
+);
+```
+**なぜ壊れるか**: Drive API v3 はメタデータの `title` フィールドを廃止し `name` に統一した。`appsscript.json` の `enabledAdvancedServices.version` が `v3` なのにコードが `title:` のままだとメタデータが無効化されて update 全体が失敗する。
+- **確認方法**: `appsscript.json` の Drive サービス `version` を見る (`v2` or `v3`)
+- **v2 → v3 移行で他に影響するもの**:
+  - `Drive.Files.copy(meta, fileId, {convert: true})` の `convert: true` は v3 で廃止 → `meta.mimeType: 'application/vnd.google-apps.spreadsheet'` を指定する
+  - 戻り値プロパティ `id`/`name`/`mimeType` は同じだが、v2 の `title` を読んでいる箇所は全て `name` に直す
+  - 検索系 `Drive.Files.list()` のクエリ構文も微妙に異なる
+- **v2 自体が Google により段階廃止予定**。新規プロジェクトは最初から v3 を選ぶ
+
+---
+
 ## フロントエンドDOM操作の罠
 
 ### innerHTML += はイベントリスナーを全破壊する
@@ -162,3 +191,9 @@ input.value = (item.amount !== undefined && item.amount !== null) ? item.amount 
 - **対策**: `clasp push` で不要ファイルが混入しないよう **`.claspignore` を必ず設置**する。既にサーバーに上がっている場合は Apps Script API (`projects.updateContent`) で該当ファイルを除外した状態で PUT する（clasp pushではリモート削除できない）
 - **診断法**: `curl https://script.googleapis.com/v1/projects/{ID}/content` でサーバー側のファイル一覧を取得 → ローカルに無いファイルや明らかに場違いなファイル (`content.js` 等) が無いか確認
 - **予防**: トップレベルIIFE冒頭に `if (typeof document === 'undefined') return;` のガードを入れると両環境で動く。ただし根本的には混入させないのが正解
+
+### 2026-04-27
+- **CRITICAL**: Advanced Drive Service の `v2` → `v3` 移行で `title` → `name` の改名が漏れると `Drive.Files.update` が「呼び出しに失敗しました」で死ぬ。`appsscript.json` の `version` を切り替えるだけでは済まず、コード全体の grep が必要
+- **対策**: v2/v3 を判別するときは `appsscript.json` の `enabledAdvancedServices` の `version` を最初に見る。`grep -nE "Drive\.Files\.(update|copy|insert)" `で全呼び出しを列挙して、メタデータ第1引数の `title:` / `convert:` を全て修正する
+- **注意**: `Drive.Files.copy()` の `{convert: true}` も v3 で廃止されている。CSV→スプレッドシート変換は `mimeType: 'application/vnd.google-apps.spreadsheet'` をメタデータに指定する方式に置き換える
+- **コツ**: 同じユーザーアカウント配下でも、プロジェクトごとに v2/v3 が混在するのが普通。プロジェクトを跨いで作業する時は最初に `appsscript.json` を読むのが習慣として安全
